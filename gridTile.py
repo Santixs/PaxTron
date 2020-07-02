@@ -3,7 +3,6 @@ import pygame, colors
 
 class Grid(pygame.sprite.Sprite):
 
-
     def __init__(self, x, y, owner):
         super().__init__()
         self.width = self.height = 20

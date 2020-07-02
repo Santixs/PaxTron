@@ -34,6 +34,7 @@ def change(player):
     tile.setOwner(player)
     player.score +=1'''
 
+
 def coordToIndex(coord):
     return int((coord - 1) / (block_size + 1))
 

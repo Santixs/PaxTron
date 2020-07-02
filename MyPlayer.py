@@ -1,7 +1,5 @@
 import pygame
-
-RED = (255, 0, 0)
-WHITE = (255, 255, 255)
+import colors
 
 class player(pygame.sprite.Sprite):
 
@@ -15,8 +13,8 @@ class player(pygame.sprite.Sprite):
         self.width = self.height = 25
         self.score = score
         self.image = pygame.Surface([self.width, self.height])
-        self.image.fill(WHITE)
-        self.image.set_colorkey(WHITE)
+        self.image.fill(colors.WHITE)
+        self.image.set_colorkey(colors.WHITE)
 
         pygame.draw.rect(self.image, color, [0, 0, 21, 21])
 
