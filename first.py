@@ -6,11 +6,12 @@ from gridTile import Grid
 
 def draw():
     screen.fill(colors.BLACK)
-    #Grid
+    #The gris is drawn
     grid_list.draw((screen))
-    #Players
+    #the players are drawn
     all_sprites_list.draw(screen)
-    #Health and score bar
+
+    #Health and score bar, the number is truncated to 2 decimals
     scoreA = "{:.2f}".format(playerA.score/numberTiles*100)
     scoreB = "{:.2f}".format(playerB.score / numberTiles * 100)
 
@@ -20,7 +21,8 @@ def draw():
     screen.blit(labelB, (600, 18))
 
 def change(player):
-
+    #Every time a player moves, the ownership of that tile is checked and a life is lost if it
+    # is another player's, if it is nobody's it becomes that player's
     tile = matrix[coordToIndex(player.rect.center[0])][coordToIndex(player.rect.center[1]-21)]
     if tile.owner.name == 'No' or tile.owner.name ==player.name:
         tile.setOwner(player)
@@ -36,9 +38,12 @@ def change(player):
 
 
 def coordToIndex(coord):
+    #the coordinates are transformed into an index
+    #The +1 is for the margin between tiles
     return int((coord - 1) / (block_size + 1))
 
 def knock(player,side):
+    #When one player is in the border of the screen loses one life and it is moved behind
     if side == "left": player.moveRight(126)
     elif side == "right": player.moveLeft(126)
     elif side == "up": player.moveDown(126)
@@ -50,6 +55,7 @@ def knock(player,side):
 
 
 def devMode():
+    #It only shows the x and y coordinates of each player
     labelAA = font.render("PlayerA:  X:"+ str(playerA.rect.x) + ",  Y:" + str(playerA.rect.y), 1, colors.WHITE)
     screen.blit(labelAA, (50, 18))
     labelBB = font.render("PlayerB:  X:" + str(playerB.rect.x) + ",  Y:" + str(playerB.rect.y), 1, colors.WHITE)
@@ -57,10 +63,119 @@ def devMode():
 
 def checkLifes(player):
     if (player.lifes == 0):
-        global loser
+        global loser, mode
         loser = player.name
-        global mode
         mode = "End"
+
+
+def reset():
+    global carryOn, enableDevMode, all_sprites_list, playerA, playerB, mode, loser
+
+    all_sprites_list = pygame.sprite.Group()
+
+    playerA = player("playerA", colors.REDD, 1)
+    playerA.rect.x = 0
+    playerA.rect.y = 42
+
+    playerB = player("playerB", colors.GREEND, 1)
+    playerB.rect.x = 778
+    playerB.rect.y = 42
+
+    all_sprites_list.add(playerA)
+    all_sprites_list.add(playerB)
+
+    mode = "Normal"
+    loser = "No"
+    carryOn = True
+    screen.fill(colors.BLACK)
+    enableDevMode = False
+
+
+
+def createGrid():
+    global block_size, rows, cols, noOwner, matrix, nGrid, grid_list
+
+    grid_list = pygame.sprite.Group()
+
+    block_size = 20  # Set the size of the grid block
+    # We calculate the number of rows and columns dividing thw width and length by the size of each tile plus the margin
+    rows, cols = (int(size[0] / (block_size + 1)), int((size[1] + barSize) / (block_size + 1)))
+
+    noOwner = player("No", colors.WHITE, 3, numberTiles)
+    # We create the matrix and draw the grid
+    matrix = [[0] * cols for i in range(rows)]
+    for x in range(1, size[0], block_size + 1):
+        for y in range(barSize, size[1] + barSize, block_size + 1):
+            nGrid = Grid(x, y, noOwner)
+            grid_list.add(nGrid)
+            # We translate the coordinates into the index of the bi-dimensional matrix
+            matrix[coordToIndex(x)][coordToIndex(y)] = nGrid
+
+
+
+
+def keyPressed(keys):
+    global mode, enableDevMode
+    if keys[pygame.K_p]:
+        enableDevMode = True
+
+    if keys[pygame.K_ESCAPE]:
+        mode = "Pause"
+
+    # Player1
+    if keys[pygame.K_a]:
+        if playerA.rect.x > 2:
+            playerA.moveLeft(playerA.speed)
+            change(playerA)
+        else:
+            knock(playerA, "left")
+    elif keys[pygame.K_d]:
+        if playerA.rect.x < 771:
+            playerA.moveRight(playerA.speed)
+            change(playerA)
+        else:
+
+            knock(playerA, "right")
+    elif keys[pygame.K_w]:
+        if playerA.rect.y > 44:
+            playerA.moveUp(playerA.speed)
+            change(playerA)
+        else:
+            knock(playerA, "up")
+    elif keys[pygame.K_s]:
+        if playerA.rect.y < 608:
+            playerA.moveDown(playerA.speed)
+            change(playerA)
+        else:
+            knock(playerA, "down")
+
+    # Player2
+    if keys[pygame.K_LEFT]:
+        if playerB.rect.x > 2:
+            playerB.moveLeft(playerB.speed)
+            change(playerB)
+        else:
+            knock(playerB, "left")
+    elif keys[pygame.K_RIGHT]:
+        if playerB.rect.x < 778:
+            playerB.moveRight(playerB.speed)
+            change(playerB)
+        else:
+            knock(playerB, "right")
+    elif keys[pygame.K_UP]:
+        if playerB.rect.y > 44:
+            playerB.moveUp(playerB.speed)
+            change(playerB)
+        else:
+            knock(playerB, "up")
+    elif keys[pygame.K_DOWN]:
+        if playerB.rect.y < 608:
+            playerB.moveDown(playerB.speed)
+            change(playerB)
+        else:
+            knock(playerB, "down")
+
+
 pygame.init()
 # Open a new window
 barSize = 42
@@ -69,64 +184,23 @@ numberTiles = 1064
 screen = pygame.display.set_mode(size)
 pygame.display.set_caption("MySnake Game")
 
-mode = "Normal"
-loser = "No"
-
-all_sprites_list = pygame.sprite.Group()
-grid_list = pygame.sprite.Group()
-
-# The clock will be used to control how fast the screen updates
-clock = pygame.time.Clock()
-
-playerA = player("playerA", colors.REDD, 1)
-playerA.rect.x=0
-playerA.rect.y=42
-
-playerB = player("playerB", colors.GREEND, 1)
-playerB.rect.x=778
-playerB.rect.y=42
-
-
-all_sprites_list.add(playerA)
-all_sprites_list.add(playerB)
-
-
-block_size = 20  # Set the size of the grid block
-#We calculate the number of rows and columns dividing thw width and length by the size of each tile plus the margin
-rows, cols = (int(size[0]/(block_size + 1)),int((size[1]+barSize)/(block_size + 1)))
-
-noOwner = player("No", colors.WHITE, 3,numberTiles)
-#We create the matrix and draw the grid
-matrix = [[0] * cols for i in range(rows)]
-for x in range(1, size[0], block_size +1):
-    for y in range(barSize, size[1]+barSize, block_size +1):
-
-        nGrid = Grid(x,y, noOwner)
-        grid_list.add(nGrid)
-        #We translate the coordinates into the index of the bi-dimensional matrix
-        matrix[coordToIndex(x)][coordToIndex(y)]=nGrid
-
-
-carryOn = True
-screen.fill(colors.BLACK)
-
 # Health and score bar
 font = pygame.font.Font(None, 20)
+font2 = pygame.font.Font(None, 48)
+font3 = pygame.font.Font(None, 100)
 
-enableDevMode = False
+clock = pygame.time.Clock()
 
-
-
-
-
-
-
-
+createGrid()
+reset()
 
 
 # -------- Main Program Loop -----------
 
 while carryOn:
+    pygame.display.flip()
+    # Limit to 10 frames per second
+    clock.tick(10)
 
     # --- Main event loop
     for event in pygame.event.get():  # User did something
@@ -138,7 +212,6 @@ while carryOn:
         s = pygame.Surface((1000, 750), pygame.SRCALPHA)  # per-pixel alpha
         s.fill((255, 255, 255, 10))  # notice the alpha value in the color
         screen.blit(s, (0, 0))
-        font2 = pygame.font.Font(None, 48)
         labelP = font2.render("Pause Mode, press escape to return to the game", 20, colors.BLACK)
         screen.blit(labelP, (20, 300))
 
@@ -154,7 +227,6 @@ while carryOn:
         s = pygame.Surface((1000, 750), pygame.SRCALPHA)  # per-pixel alpha
         s.fill((255, 255, 255, 10))  # notice the alpha value in the color
         screen.blit(s, (0, 0))
-        font2 = pygame.font.Font(None, 100)
         labelP = font2.render("The loser is " + loser, 20, colors.RED)
         screen.blit(labelP, (65, 280))
 
@@ -162,81 +234,8 @@ while carryOn:
     elif mode == "Normal":
 
         draw()
-        keys = pygame.key.get_pressed()
-
-        if keys[pygame.K_p]:
-            enableDevMode = True
-
-        if keys[pygame.K_ESCAPE]:
-            mode = "Pause"
-
-        # Player1
-        if keys[pygame.K_a]:
-            if playerA.rect.x>2 :
-                playerA.moveLeft(playerA.speed)
-                change(playerA)
-            else:
-                knock(playerA, "left")
-        elif keys[pygame.K_d]:
-            if playerA.rect.x<771:
-                playerA.moveRight(playerA.speed)
-                change(playerA)
-            else:
-
-                knock(playerA,"right")
-        elif keys[pygame.K_w]:
-            if playerA.rect.y > 44:
-                playerA.moveUp(playerA.speed)
-                change(playerA)
-            else:
-                knock(playerA, "up")
-        elif keys[pygame.K_s]:
-            if playerA.rect.y < 608:
-                playerA.moveDown(playerA.speed)
-                change(playerA)
-            else:
-                knock(playerA, "down")
-
-        #Player2
-        if keys[pygame.K_LEFT]:
-            if playerB.rect.x > 2:
-                playerB.moveLeft(playerB.speed)
-                change(playerB)
-            else:
-                knock(playerB,"left")
-        elif keys[pygame.K_RIGHT]:
-            if playerB.rect.x < 778:
-                playerB.moveRight(playerB.speed)
-                change(playerB)
-            else:
-                knock(playerB,"right")
-        elif keys[pygame.K_UP]:
-            if playerB.rect.y > 44:
-                playerB.moveUp(playerB.speed)
-                change(playerB)
-            else:
-                knock(playerB,"up")
-        elif keys[pygame.K_DOWN]:
-            if playerB.rect.y < 608:
-                playerB.moveDown(playerB.speed)
-                change(playerB)
-            else:
-                knock(playerB,"down")
-
-
-
-
-
-
-    if enableDevMode: devMode()
-
-    # --- Go ahead and update the screen with what we've drawn.
-    pygame.display.flip()
-    # --- Limit to 60 frames per second
-    clock.tick(10)
-
-
-
+        keyPressed(pygame.key.get_pressed())
+        if enableDevMode: devMode()
 
 
 
