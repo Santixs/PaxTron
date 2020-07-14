@@ -1,8 +1,18 @@
-# Import the pygame library and initialise the game engine
 import pygame, colors
 from MyPlayer import player
 from gridTile import Grid
+from random import randint, choice
+from math import trunc
+#--------------------------Options--------------------------
+goOverOwnTilesAllowed = False
+goOverOthersTilesAllowed = False
+edgesRemoveLives = True
+percentageToWin = 0.51
+numberObstacles = 50
+numberEnemies = 0 #Unfinished
+numberLifes = 1
 
+##----------------------------------------------------------
 
 def draw():
     screen.fill(colors.BLACK)
@@ -10,56 +20,60 @@ def draw():
     grid_list.draw((screen))
     #the players are drawn
     all_sprites_list.draw(screen)
+    enemies_list.draw(screen)
 
     #Health and score bar, the number is truncated to 2 decimals
     scoreA = "{:.2f}".format(playerA.score/numberTiles*100)
     scoreB = "{:.2f}".format(playerB.score / numberTiles * 100)
-
+    total = "{:.2f}".format( numberTilesNoOwner/ numberTiles * 100)
     labelA = font.render("PlayerA: " + scoreA + "% and " + str(playerA.lifes) + " lifes", 1, colors.RED)
     screen.blit(labelA, (400, 18))
     labelB = font.render("PlayerB: " + scoreB + "% and " + str(playerB.lifes) + " lifes", 1, colors.GREEN)
     screen.blit(labelB, (600, 18))
+    labelTotal = font.render("Left:" + total, 1, colors.GREEN)
+    screen.blit(labelTotal, (200, 18))
 
 def change(player):
     #Every time a player moves, the ownership of that tile is checked and a life is lost if it
     # is another player's, if it is nobody's it becomes that player's
+
+    global numberTilesNoOwner
+
     tile = matrix[coordToIndex(player.rect.center[0])][coordToIndex(player.rect.center[1]-21)]
-    if tile.owner.name == 'No' or tile.owner.name ==player.name:
-        tile.setOwner(player)
-        player.score += 1
+
+    if not goOverOthersTilesAllowed :
+        if tile.owner.name == 'No':
+            tile.setOwner(player)
+            player.score += 1
+            numberTilesNoOwner -=1
+        elif tile.owner.name == player.name and goOverOwnTilesAllowed: pass
+        else:
+            player.lifes -= 1
+            checkLifes(player)
     else:
-        player.lifes -= 1
-        checkLifes(player)
+        tile.owner.score -= 1
+        tile.setOwner(player)
+        player.score +=1
 
-    # To allow passing through another player's zone we have to change the if and else for this
-    '''tile.owner.score -= 1
-    tile.setOwner(player)
-    player.score +=1'''
+    checkWinner()
 
+
+def checkWinner():
+    global mode, numberTilesNoOwner
+    if numberTilesNoOwner < numberTiles*percentageToWin : mode = "Winner"
 
 def coordToIndex(coord):
     #the coordinates are transformed into an index
     #The +1 is for the margin between tiles
-    return int((coord - 1) / (block_size + 1))
+    return trunc((coord - 1) / (block_size + 1))
 
 def knock(player,side):
     #When one player is in the border of the screen loses one life and it is moved behind
-    if side == "left": player.moveRight(126)
-    elif side == "right": player.moveLeft(126)
-    elif side == "up": player.moveDown(126)
-    elif side == "down": player.moveUp(126)
-
+    player.move(side, 126)
     player.lifes -= 1
     checkLifes(player)
 
 
-
-def devMode():
-    #It only shows the x and y coordinates of each player
-    labelAA = font.render("PlayerA:  X:"+ str(playerA.rect.x) + ",  Y:" + str(playerA.rect.y), 1, colors.WHITE)
-    screen.blit(labelAA, (50, 18))
-    labelBB = font.render("PlayerB:  X:" + str(playerB.rect.x) + ",  Y:" + str(playerB.rect.y), 1, colors.WHITE)
-    screen.blit(labelBB, (200, 18))
 
 def checkLifes(player):
     if (player.lifes == 0):
@@ -69,27 +83,42 @@ def checkLifes(player):
 
 
 def reset():
-    global carryOn, enableDevMode, all_sprites_list, playerA, playerB, mode, loser
+    global carryOn, all_sprites_list, playerA, playerB, mode, loser, numberTilesNoOwner, enemies_list, moveEnemies
+
+    createGrid()
+
+    numberTilesNoOwner = numberTiles
 
     all_sprites_list = pygame.sprite.Group()
+    enemies_list = pygame.sprite.Group()
 
-    playerA = player("playerA", colors.REDD, 1)
+
+
+    playerA = player("playerA", colors.REDD, numberLifes )
     playerA.rect.x = 0
     playerA.rect.y = 42
 
-    playerB = player("playerB", colors.GREEND, 1)
+    playerB = player("playerB", colors.GREEND, numberLifes )
     playerB.rect.x = 778
     playerB.rect.y = 42
 
     all_sprites_list.add(playerA)
     all_sprites_list.add(playerB)
 
+
+    #To set the initial tile ownership
+    change(playerA)
+    change(playerB)
+
+    generateObstacles()
+    generateEnemies()
+
+
     mode = "Normal"
     loser = "No"
     carryOn = True
-    screen.fill(colors.BLACK)
-    enableDevMode = False
 
+    screen.fill(colors.BLACK)
 
 
 def createGrid():
@@ -113,94 +142,128 @@ def createGrid():
 
 
 
+def generateEnemies():
+    global enemyList
+    enemyList = []
 
-def keyPressed(keys):
-    global mode, enableDevMode
-    if keys[pygame.K_p]:
-        enableDevMode = True
+    for num in range(numberEnemies):
+        enemy = player("Enemy", colors.GREYD, 120, numberTiles)
+        enemy.speed=5
+        #21 is the size of each tile, 38 the number of tiles in the x axis and 28 in the y axis
+        #Since we do not want to have an enemy between 2 tiles we generate a discrete value
+        x = 21*randint(1, 38)
+        y = 21*randint(1, 28)
+        enemy.rect.x = x
+        enemy.rect.y = y
+        enemies_list.add(enemy)
+        enemyList.append(enemy)
+        matrix[coordToIndex(x)][coordToIndex(y)].setOwner(enemy)
+
+
+def moveEnemies():
+    pass
+    #Unfinished
+    ''' for num in range(numberEnemies):
+        enemyList[num].move(choice(directions))
+        #change(enemyList[num])'''
+
+def generateObstacles():
+    obstacle = player("Obstacle", colors.BLACK, 0, numberTiles)
+    for num in range(numberObstacles):
+        x = randint(0, size[0])
+        y = randint(22, size[1])
+        matrix[coordToIndex(x)][coordToIndex(y)].setOwner(obstacle)
+
+
+def keyPressed():
+    global mode
 
     if keys[pygame.K_ESCAPE]:
         mode = "Pause"
-
+    # Up -> 1, Right -> 2, Down -> -1, Left -> -2
     # Player1
     if keys[pygame.K_a]:
         if playerA.rect.x > 2:
-            playerA.moveLeft(playerA.speed)
+            playerA.move(-2,playerA.speed)
             change(playerA)
         else:
-            knock(playerA, "left")
+           if edgesRemoveLives : knock(playerA, -2)
     elif keys[pygame.K_d]:
         if playerA.rect.x < 771:
-            playerA.moveRight(playerA.speed)
+            playerA.move(2,playerA.speed)
             change(playerA)
         else:
 
-            knock(playerA, "right")
+            if edgesRemoveLives: knock(playerA, 2)
     elif keys[pygame.K_w]:
         if playerA.rect.y > 44:
-            playerA.moveUp(playerA.speed)
+            playerA.move(1,playerA.speed)
             change(playerA)
         else:
-            knock(playerA, "up")
+            if edgesRemoveLives :knock(playerA, 1)
     elif keys[pygame.K_s]:
         if playerA.rect.y < 608:
-            playerA.moveDown(playerA.speed)
+            playerA.move(-1,playerA.speed)
             change(playerA)
         else:
-            knock(playerA, "down")
+            if edgesRemoveLives :knock(playerA, -1)
 
     # Player2
     if keys[pygame.K_LEFT]:
         if playerB.rect.x > 2:
-            playerB.moveLeft(playerB.speed)
+            playerB.move(-2,playerB.speed)
             change(playerB)
         else:
-            knock(playerB, "left")
+            if edgesRemoveLives :knock(playerB,-2)
     elif keys[pygame.K_RIGHT]:
         if playerB.rect.x < 778:
-            playerB.moveRight(playerB.speed)
+            playerB.move(2,playerB.speed)
             change(playerB)
         else:
-            knock(playerB, "right")
+            if edgesRemoveLives :knock(playerB, 2)
     elif keys[pygame.K_UP]:
         if playerB.rect.y > 44:
-            playerB.moveUp(playerB.speed)
+            playerB.move(1,playerB.speed)
             change(playerB)
         else:
-            knock(playerB, "up")
+            if edgesRemoveLives :knock(playerB, 2)
     elif keys[pygame.K_DOWN]:
         if playerB.rect.y < 608:
-            playerB.moveDown(playerB.speed)
+            playerB.move(-1,playerB.speed)
             change(playerB)
         else:
-            knock(playerB, "down")
+            if edgesRemoveLives :knock(playerB, -1)
 
 
 pygame.init()
 # Open a new window
 barSize = 42
-size = (798,588+barSize)
+size = (798,588+barSize)#798,630
 numberTiles = 1064
 screen = pygame.display.set_mode(size)
-pygame.display.set_caption("MySnake Game")
+pygame.display.set_caption("PaxTron")
 
+directions = [1,-1,2,-2] #Up -> 1, Right -> 2, Down -> -1, Left -> -2
 # Health and score bar
 font = pygame.font.Font(None, 20)
 font2 = pygame.font.Font(None, 48)
 font3 = pygame.font.Font(None, 100)
 
 clock = pygame.time.Clock()
-
-createGrid()
 reset()
+
+
+#With this windows size, there are 1064 tiles (38*28)
 
 
 # -------- Main Program Loop -----------
 
 while carryOn:
+    keys = pygame.key.get_pressed()
     pygame.display.flip()
     # Limit to 10 frames per second
     clock.tick(10)
+    moveEnemies()
 
     # --- Main event loop
     for event in pygame.event.get():  # User did something
@@ -209,13 +272,9 @@ while carryOn:
 
 
     if mode == "Pause":
-        s = pygame.Surface((1000, 750), pygame.SRCALPHA)  # per-pixel alpha
-        s.fill((255, 255, 255, 10))  # notice the alpha value in the color
-        screen.blit(s, (0, 0))
+        screen.fill((255, 255, 255, 10))
         labelP = font2.render("Pause Mode, press escape to return to the game", 20, colors.BLACK)
         screen.blit(labelP, (20, 300))
-
-        keys = pygame.key.get_pressed()
 
         if keys[pygame.K_ESCAPE]:
             mode = "Normal"
@@ -227,15 +286,31 @@ while carryOn:
         s = pygame.Surface((1000, 750), pygame.SRCALPHA)  # per-pixel alpha
         s.fill((255, 255, 255, 10))  # notice the alpha value in the color
         screen.blit(s, (0, 0))
-        labelP = font2.render("The loser is " + loser, 20, colors.RED)
+        labelP = font3.render("The loser is " + loser, 20, colors.RED)
         screen.blit(labelP, (65, 280))
+
+        if keys[pygame.K_1]:
+            reset()
+
+    elif mode == "Winner":
+
+        s = pygame.Surface((1000, 750), pygame.SRCALPHA)  # per-pixel alpha
+        s.fill((255, 255, 255, 10))  # notice the alpha value in the color
+        screen.blit(s, (0, 0))
+        if playerA.score > playerB.score: winner = playerA.name
+        else: winner = playerB.name
+        labelP = font3.render("The Winner is " + winner, 20, colors.RED)
+        screen.blit(labelP, (25, 280))
+
+        if keys[pygame.K_1]:
+            reset()
 
 
     elif mode == "Normal":
 
         draw()
-        keyPressed(pygame.key.get_pressed())
-        if enableDevMode: devMode()
+        keyPressed()
+
 
 
 

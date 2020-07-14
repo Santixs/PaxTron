@@ -7,7 +7,6 @@ class player(pygame.sprite.Sprite):
 
     def __init__(self, name, color, lifes,score=0):
         super().__init__()
-
         self.name = name
         self.color = color
         self.lifes = lifes
@@ -22,18 +21,9 @@ class player(pygame.sprite.Sprite):
 
         self.rect = pygame.rect.Rect((0, 0, 21, 21))
 
-
-    def moveRight(self, pixels):
-
-        self.rect.x += pixels
-
-    def moveLeft(self, pixels):
-        self.rect.x -= pixels
-
-    def moveUp(self, pixels):
-        self.rect.y -= pixels
-
-    def moveDown(self, pixels):
-        self.rect.y += pixels
-
-
+    def move(self,direction, pixels = 21):
+        #Up -> 1, Right -> 2, Down -> -1, Left -> -2
+        if direction == 1 or direction == -1:
+            self.rect.y += pixels*-direction
+        else:
+            self.rect.x += pixels*(direction/2)

@@ -28,8 +28,10 @@ class Grid(pygame.sprite.Sprite):
         elif self.owner.name == "playerB":
             pygame.draw.rect(self.image, colors.GREEN, [0, 0, 20, 20])
 
-        #There is no player created, just in case in the future we want to create a game with more players
-        elif self.owner.name == "playerC":
-            pygame.draw.rect(self.image, colors.BLUE, [0, 0, 20, 20])
+        elif self.owner.name == "Obstacle":
+            pygame.draw.rect(self.image, colors.BLACK, [0, 0, 20, 20])
+
+        elif self.owner.name == "Enemy":
+            pygame.draw.rect(self.image, colors.GREYD, [0, 0, 20, 20])
 
 
