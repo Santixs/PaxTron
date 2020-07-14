@@ -38,7 +38,6 @@ def change(player):
     # is another player's, if it is nobody's it becomes that player's
 
     global numberTilesNoOwner
-
     tile = matrix[coordToIndex(player.rect.center[0])][coordToIndex(player.rect.center[1]-21)]
 
     if not goOverOthersTilesAllowed :

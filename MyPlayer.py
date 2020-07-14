@@ -2,7 +2,6 @@ import pygame
 import colors
 
 #Player class
-
 class player(pygame.sprite.Sprite):
 
     def __init__(self, name, color, lifes,score=0):

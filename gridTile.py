@@ -1,7 +1,6 @@
 import pygame, colors
 
 #Tile object, each of the "squares" on the grid is a different tile
-
 class Grid(pygame.sprite.Sprite):
 
     def __init__(self, x, y, owner):
